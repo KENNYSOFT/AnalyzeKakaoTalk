@@ -2,6 +2,7 @@ package kr.KENNYSOFT.AnalyzeKakaoTalk;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -13,6 +14,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -22,15 +24,12 @@ import com.opencsv.CSVWriter;
 
 class AnalyzeKakaoTalk
 {
-	static long userId;
-
 	public static void main(String args[]) throws Exception
 	{
 		getFiles();
-		dump("KakaoTalk.db","chat_logs","KakaoTalk_dump.csv");
-		dump("KakaoTalk2.db","friends","KakaoTalk2_dump.csv");
 		decrypt("KakaoTalk_decrypted.csv");
 		decrypt2("KakaoTalk2_decrypted.csv");
+		deleteFiles();
 	}
 
 	static void getFiles() throws IOException,InterruptedException
@@ -69,6 +68,12 @@ class AnalyzeKakaoTalk
 		Runtime.getRuntime().exec("adb install -r KakaoTalk.apk".split(" "));
 		System.out.println("[Get END]");
 		System.out.println("");
+	}
+	
+	static void deleteFiles()
+	{
+		String toDelete[]=new String[]{"KakaoTalk.apk","backup.ab","backup.tar","KakaoTalk.db","KakaoTalk2.db","KakaoTalk.perferences.xml"};
+		for(int i=0;i<toDelete.length;++i)new File(toDelete[i]).delete();
 	}
 
 	/* 1. Base
@@ -118,20 +123,25 @@ class AnalyzeKakaoTalk
 
 	static void dump(String db,String table,String csv) throws IOException,SQLException
 	{
-		int now=0;
-		Connection connection=DriverManager.getConnection("jdbc:sqlite:"+db);
+		int now=0,total;
+		System.out.println("[Dump START] "+db+"/"+table+" -> "+csv+"");
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
 		buff.write("\ufeff");
 		CSVWriter writer=new CSVWriter(buff,',');
-		System.out.println("[Dump START] "+db+"/"+table+" -> "+csv+"");
-		ResultSet rs=connection.createStatement().executeQuery("SELECT * FROM "+table);
+		Connection connection=DriverManager.getConnection("jdbc:sqlite:"+db);
+		Statement statement=connection.createStatement();
+		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM "+table);
+		rs.next();
+		total=rs.getInt(1);
+		rs.close();
+		rs=statement.executeQuery("SELECT * FROM "+table);
 		ResultSetMetaData rsmd=rs.getMetaData();
 		String[] line=new String[rsmd.getColumnCount()];
 		for(int i=0;i<rsmd.getColumnCount();++i)line[i]=rsmd.getColumnName(i+1);
 		writer.writeNext(line);
 		while(rs.next())
 		{
-			if(++now%10000==0)System.out.println("[Dump] Passed "+now+" items");
+			if(++now%10000==0)System.out.println("[Dump] Passed "+now+" of "+total+" items");
 			for(int i=0;i<rsmd.getColumnCount();++i)
 			{
 				if(rsmd.getColumnType(i+1)==Types.INTEGER)line[i]=String.valueOf(rs.getLong(i+1));
@@ -140,39 +150,47 @@ class AnalyzeKakaoTalk
 			writer.writeNext(line);
 		}
 		rs.close();
+		statement.close();
 		connection.close();
 		writer.close();
+		buff.close();
 		System.out.println("[Dump END]");
 		System.out.println("");
 	}
 
 	static void decrypt(String csv) throws IOException,SQLException
 	{
-		int now=0,toDecode[]=new int[]{5,6};
-		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk.db");
+		int now=0,total;
+		String toDecode[]=new String[]{"message","attachment"};
+		System.out.println("[Decrypt START] KakaoTalk.db/chat_logs -> "+csv);
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
 		buff.write("\ufeff");
 		CSVWriter writer=new CSVWriter(buff,',');
-		System.out.println("[Decrypt START] KakaoTalk.db/chat_logs -> "+csv);
-		ResultSet rs=connection.createStatement().executeQuery("SELECT * FROM chat_logs");
+		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk.db");
+		Statement statement=connection.createStatement();
+		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_logs");
+		rs.next();
+		total=rs.getInt(1);
+		rs.close();
+		rs=statement.executeQuery("SELECT * FROM chat_logs");
 		ResultSetMetaData rsmd=rs.getMetaData();
 		String[] line=new String[rsmd.getColumnCount()];
 		for(int i=0;i<rsmd.getColumnCount();++i)line[i]=rsmd.getColumnName(i+1);
 		writer.writeNext(line);
 		while(rs.next())
 		{
-			if(++now%1000==0)System.out.println("[Decrypt] Passed "+now+" items");
+			if(++now%1000==0)System.out.println("[Decrypt] Passed "+now+" of "+total+" items");
 			for(int i=0;i<rsmd.getColumnCount();++i)
 			{
 				if(rsmd.getColumnType(i+1)==Types.INTEGER)line[i]=String.valueOf(rs.getLong(i+1));
 				else line[i]=rs.getString(i+1);
 			}
 			int enc;
-			if(line[10].contains("\"enc\":true"))enc=1;
-			else enc=Integer.parseInt(line[10].substring(line[10].indexOf("\"enc\":")+6).split("\\D+")[0]);
+			if(rs.getString("v").contains("\"enc\":true"))enc=1;
+			else enc=Integer.parseInt(rs.getString("v").substring(rs.getString("v").indexOf("\"enc\":")+6).split("\\D+")[0]);
 			try
 			{
-				for(int i=0;i<toDecode.length;++i)line[toDecode[i]]=decode(Long.parseLong(line[4]),enc,line[toDecode[i]]);
+				for(int i=0;i<toDecode.length;++i)line[rs.findColumn(toDecode[i])-1]=decode(rs.getLong("user_id"),enc,line[rs.findColumn(toDecode[i])-1]);
 			}
 			catch(Exception e)
 			{
@@ -183,29 +201,37 @@ class AnalyzeKakaoTalk
 			writer.writeNext(line);
 		}
 		rs.close();
+		statement.close();
 		connection.close();
 		writer.close();
+		buff.close();
 		System.out.println("[Decrypt END]");
 		System.out.println("");
 	}
 
 	static void decrypt2(String csv) throws IOException,SQLException
 	{
-		if(userId==0)userId=getUserId();
-		int now=0,toDecode[]=new int[]{4,5,6,7,9,10,11,17,18,19,27,30,33};
-		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk2.db");
+		int now=0,total;
+		String toDecode[]=new String[]{"uuid","phone_number","raw_phone_number","name","profile_image_url","full_profile_image_url","original_profile_image_url","status_message","v","ext","nick_name","contact_name","board_v"};
+		System.out.println("[Decrypt2 START] KakaoTalk2.db/friends -> "+csv);
+		long userId=getUserId();
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
 		buff.write("\ufeff");
 		CSVWriter writer=new CSVWriter(buff,',');
-		System.out.println("[Decrypt2 START] KakaoTalk2.db/friends -> "+csv);
-		ResultSet rs=connection.createStatement().executeQuery("SELECT * FROM friends");
+		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk2.db");
+		Statement statement=connection.createStatement();
+		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM friends");
+		rs.next();
+		total=rs.getInt(1);
+		rs.close();
+		rs=statement.executeQuery("SELECT * FROM friends");
 		ResultSetMetaData rsmd=rs.getMetaData();
 		String[] line=new String[rsmd.getColumnCount()];
 		for(int i=0;i<rsmd.getColumnCount();++i)line[i]=rsmd.getColumnName(i+1);
 		writer.writeNext(line);
 		while(rs.next())
 		{
-			if(++now%10000==0)System.out.println("[Decrypt2] Passed "+now+" items");
+			if(++now%1000==0)System.out.println("[Decrypt2] Passed "+now+" of "+total+" items");
 			for(int i=0;i<rsmd.getColumnCount();++i)
 			{
 				if(rsmd.getColumnType(i+1)==Types.INTEGER)line[i]=String.valueOf(rs.getLong(i+1));
@@ -214,11 +240,7 @@ class AnalyzeKakaoTalk
 			int enc=rs.getInt("enc");
 			try
 			{
-				for(int i=0;i<toDecode.length;++i)
-				{
-					if(line[toDecode[i]]==null||line[toDecode[i]].startsWith("{\""))continue;
-					line[toDecode[i]]=decode(userId,enc,line[toDecode[i]]);
-				}
+				for(int i=0;i<toDecode.length;++i)line[rs.findColumn(toDecode[i])-1]=decode(userId,enc,line[rs.findColumn(toDecode[i])-1]);
 			}
 			catch(Exception e)
 			{
@@ -229,17 +251,19 @@ class AnalyzeKakaoTalk
 			writer.writeNext(line);
 		}
 		rs.close();
+		statement.close();
 		connection.close();
 		writer.close();
+		buff.close();
 		System.out.println("[Decrypt2 END]");
 		System.out.println("");
 	}
 
 	static String decode(long key,int enc,String message) throws Exception
 	{
-		if(message==null)return "";
+		if(message==null||message.startsWith("{\""))return message;
 		message=message.replace("　","").trim();
-		if(message.length()==0||message.equals("{}")||message.equals("[]"))return "";
+		if(message.length()==0||message.equals("{}")||message.equals("[]"))return message;
 		return new n(key,enc).b(message);
 	}
 }
