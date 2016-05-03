@@ -16,6 +16,8 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -87,7 +89,7 @@ class AnalyzeKakaoTalk
 		return bbqzplvtdp.kal("6d7e7e");
 	}
 
-	static String getValue()
+	static String getPreferenceValue()
 	{
 		String entry="name=\""+getEntry()+"\">",ret=null;
 		try
@@ -113,12 +115,20 @@ class AnalyzeKakaoTalk
 		cd localcd = new cd(egn);
 		try
 		{
-			return Long.valueOf(localcd.gga(getValue())).longValue();
+			return Long.valueOf(localcd.gga(getPreferenceValue())).longValue();
 		}
 		catch(Exception e)
 		{
 			return 0;
 		}
+	}
+	
+	static String decode(long key,int enc,String message) throws Exception
+	{
+		if(message==null||message.startsWith("{\""))return message;
+		message=message.replace("　","").trim();
+		if(message.length()==0||message.equals("{}")||message.equals("[]"))return message;
+		return new n(key,enc).b(message);
 	}
 
 	static void dump(String db,String table,String csv) throws IOException,SQLException
@@ -161,7 +171,7 @@ class AnalyzeKakaoTalk
 	static void decrypt(String csv) throws IOException,SQLException
 	{
 		int now=0,total;
-		String toDecode[]=new String[]{"message","attachment"};
+		ArrayList<String> toDecode=new ArrayList<String>(Arrays.asList("message","attachment"));
 		System.out.println("[Decrypt START] KakaoTalk.db/chat_logs -> "+csv);
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
 		buff.write("\ufeff");
@@ -180,17 +190,20 @@ class AnalyzeKakaoTalk
 		while(rs.next())
 		{
 			if(++now%1000==0)System.out.println("[Decrypt] Passed "+now+" of "+total+" items");
-			for(int i=0;i<rsmd.getColumnCount();++i)
-			{
-				if(rsmd.getColumnType(i+1)==Types.INTEGER)line[i]=String.valueOf(rs.getLong(i+1));
-				else line[i]=rs.getString(i+1);
-			}
-			int enc;
-			if(rs.getString("v").contains("\"enc\":true"))enc=1;
-			else enc=Integer.parseInt(rs.getString("v").substring(rs.getString("v").indexOf("\"enc\":")+6).split("\\D+")[0]);
 			try
 			{
-				for(int i=0;i<toDecode.length;++i)line[rs.findColumn(toDecode[i])-1]=decode(rs.getLong("user_id"),enc,line[rs.findColumn(toDecode[i])-1]);
+				int enc;
+				if(rs.getString("v").contains("\"enc\":true"))enc=1;
+				else enc=Integer.parseInt(rs.getString("v").substring(rs.getString("v").indexOf("\"enc\":")+6).split("\\D+")[0]);
+				for(int i=0;i<rsmd.getColumnCount();++i)
+				{
+					if(rsmd.getColumnType(i+1)==Types.INTEGER)line[i]=String.valueOf(rs.getLong(i+1));
+					else
+					{
+						if(toDecode.contains(rsmd.getColumnName(i+1)))line[i]=decode(rs.getLong("user_id"),enc,rs.getString(i+1));
+						else line[i]=rs.getString(i+1);
+					}
+				}
 			}
 			catch(Exception e)
 			{
@@ -212,7 +225,7 @@ class AnalyzeKakaoTalk
 	static void decrypt2(String csv) throws IOException,SQLException
 	{
 		int now=0,total;
-		String toDecode[]=new String[]{"uuid","phone_number","raw_phone_number","name","profile_image_url","full_profile_image_url","original_profile_image_url","status_message","v","ext","nick_name","contact_name","board_v"};
+		ArrayList<String> toDecode=new ArrayList<String>(Arrays.asList("uuid","phone_number","raw_phone_number","name","profile_image_url","full_profile_image_url","original_profile_image_url","status_message","v","ext","nick_name","contact_name","board_v"));
 		System.out.println("[Decrypt2 START] KakaoTalk2.db/friends -> "+csv);
 		long userId=getUserId();
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
@@ -232,15 +245,18 @@ class AnalyzeKakaoTalk
 		while(rs.next())
 		{
 			if(++now%1000==0)System.out.println("[Decrypt2] Passed "+now+" of "+total+" items");
-			for(int i=0;i<rsmd.getColumnCount();++i)
-			{
-				if(rsmd.getColumnType(i+1)==Types.INTEGER)line[i]=String.valueOf(rs.getLong(i+1));
-				else line[i]=rs.getString(i+1);
-			}
-			int enc=rs.getInt("enc");
 			try
 			{
-				for(int i=0;i<toDecode.length;++i)line[rs.findColumn(toDecode[i])-1]=decode(userId,enc,line[rs.findColumn(toDecode[i])-1]);
+				int enc=rs.getInt("enc");
+				for(int i=0;i<rsmd.getColumnCount();++i)
+				{
+					if(rsmd.getColumnType(i+1)==Types.INTEGER)line[i]=String.valueOf(rs.getLong(i+1));
+					else
+					{
+						if(toDecode.contains(rsmd.getColumnName(i+1)))line[i]=decode(userId,enc,rs.getString(i+1));
+						else line[i]=rs.getString(i+1);
+					}
+				}
 			}
 			catch(Exception e)
 			{
@@ -257,13 +273,5 @@ class AnalyzeKakaoTalk
 		buff.close();
 		System.out.println("[Decrypt2 END]");
 		System.out.println("");
-	}
-
-	static String decode(long key,int enc,String message) throws Exception
-	{
-		if(message==null||message.startsWith("{\""))return message;
-		message=message.replace("　","").trim();
-		if(message.length()==0||message.equals("{}")||message.equals("[]"))return message;
-		return new n(key,enc).b(message);
 	}
 }
