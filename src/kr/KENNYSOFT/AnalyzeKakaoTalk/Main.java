@@ -24,7 +24,6 @@ import java.util.HashMap;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.WorkbookUtil;
 import org.apache.poi.xssf.streaming.SXSSFRow;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
@@ -331,7 +330,7 @@ class AnalyzeKakaoTalk
 		return friends;
 	}
 	
-	static HashMap<Long,SXSSFSheet> parseRooms(Workbook workbook,HashMap<Long,String> friends) throws SQLException
+	static HashMap<Long,SXSSFSheet> parseRooms(SXSSFWorkbook workbook,HashMap<Long,String> friends) throws SQLException
 	{
 		int now=0,total;
 		System.out.println("[Parse2 START] KakaoTalk.db/chat_rooms");
@@ -425,7 +424,8 @@ class AnalyzeKakaoTalk
 	static void analyze(String xlsx) throws IOException,SQLException
 	{
 		int now=0,total;
-		Workbook workbook=new SXSSFWorkbook();
+		SXSSFWorkbook workbook=new SXSSFWorkbook();
+		workbook.getXSSFWorkbook().getProperties().getCoreProperties().setCreator("AnalyzeKakaoTalk");
 		HashMap<Long,String> friends=parseFriends();
 		HashMap<Long,SXSSFSheet> rooms=parseRooms(workbook,friends);
 		HashMap<Integer,String> types=parseTypes();
