@@ -64,6 +64,7 @@ class AnalyzeKakaoTalk
 			Runtime.getRuntime().exec("adb backup com.kakao.talk".split(" ")).waitFor();
 			if(Runtime.getRuntime().exec("java -jar assets/abe.jar unpack backup.ab backup.tar".split(" ")).waitFor()==0)break;
 		}
+		Runtime.getRuntime().exec("adb install -r KakaoTalk.apk".split(" "));
 		System.out.println("[Get] backup.tar");
 		TarArchiveInputStream tis=new TarArchiveInputStream(new FileInputStream("backup.tar"));
 		TarArchiveEntry te;
@@ -78,7 +79,6 @@ class AnalyzeKakaoTalk
 			fos.close();
 		}
 		tis.close();
-		Runtime.getRuntime().exec("adb install -r KakaoTalk.apk".split(" "));
 		System.out.println("[Get END]");
 		System.out.println("");
 	}
@@ -416,6 +416,7 @@ class AnalyzeKakaoTalk
 		types.put(21,"탭탭");
 		types.put(22,"이모티콘");
 		types.put(23,"검색");
+		types.put(24,"게시판");
 		types.put(51,"보이스톡");
 		types.put(81,"상세소식");
 		return types;
@@ -436,7 +437,7 @@ class AnalyzeKakaoTalk
 		rs.next();
 		total=rs.getInt(1);
 		rs.close();
-		rs=statement.executeQuery("SELECT * FROM chat_logs ORDER BY created_at ASC, _id ASC");
+		rs=statement.executeQuery("SELECT * FROM chat_logs ORDER BY id ASC");
 		while(rs.next())
 		{
 			if(++now%10000==0)System.out.println("[Analyze] Passed "+now+" of "+total+" items");
