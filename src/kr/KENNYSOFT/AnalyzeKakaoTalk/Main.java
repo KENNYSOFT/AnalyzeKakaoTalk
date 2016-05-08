@@ -1,4 +1,4 @@
-package kr.KENNYSOFT.AnalyzeKakaoTalk;
+﻿package kr.KENNYSOFT.AnalyzeKakaoTalk;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -49,22 +49,22 @@ class AnalyzeKakaoTalk
 	{
 		Process proc=null;
 		System.out.println("[Get START]");
-		proc=Runtime.getRuntime().exec("adb shell pm path com.kakao.talk".split(" "));
+		proc=Runtime.getRuntime().exec("assets\\adb shell pm path com.kakao.talk".split(" "));
 		proc.waitFor();
 		BufferedReader br=new BufferedReader(new InputStreamReader(proc.getInputStream()));
 		String sLine;
-		while((sLine=br.readLine())!=null)if(sLine.startsWith("package:"))Runtime.getRuntime().exec(("adb pull "+sLine.substring("package:".length())+" KakaoTalk.apk").split(" ")).waitFor();
+		while((sLine=br.readLine())!=null)if(sLine.startsWith("package:"))Runtime.getRuntime().exec(("assets\\adb pull "+sLine.substring("package:".length())+" KakaoTalk.apk").split(" ")).waitFor();
 		System.out.println("[Get] KakaoTalk.apk");
-		Runtime.getRuntime().exec("adb install -r -d assets/kakaotalk210.apk".split(" ")).waitFor();
+		Runtime.getRuntime().exec("assets\\adb install -r -d assets\\kakaotalk210.apk".split(" ")).waitFor();
 		System.out.println("[Get] Downgraded");
 		for(int i=1;;++i)
 		{
 			if(i==1)System.out.println("[Get] Please check the screen");
 			else System.out.println("[Get] Please check the screen ("+i+")");
-			Runtime.getRuntime().exec("adb backup com.kakao.talk".split(" ")).waitFor();
-			if(Runtime.getRuntime().exec("java -jar assets/abe.jar unpack backup.ab backup.tar".split(" ")).waitFor()==0)break;
+			Runtime.getRuntime().exec("assets\\adb backup com.kakao.talk".split(" ")).waitFor();
+			if(Runtime.getRuntime().exec("java -jar assets\\abe.jar unpack backup.ab backup.tar".split(" ")).waitFor()==0)break;
 		}
-		Runtime.getRuntime().exec("adb install -r KakaoTalk.apk".split(" "));
+		Runtime.getRuntime().exec("assets\\adb install -r KakaoTalk.apk".split(" "));
 		System.out.println("[Get] backup.tar");
 		TarArchiveInputStream tis=new TarArchiveInputStream(new FileInputStream("backup.tar"));
 		TarArchiveEntry te;
