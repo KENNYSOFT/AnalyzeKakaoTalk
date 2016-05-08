@@ -341,7 +341,7 @@ class AnalyzeKakaoTalk
 		rs.next();
 		total=rs.getInt(1);
 		rs.close();
-		rs=statement.executeQuery("SELECT * FROM chat_rooms ORDER BY last_updated_at DESC");
+		rs=statement.executeQuery("SELECT * FROM chat_rooms ORDER BY last_log_id DESC");
 		while(rs.next())
 		{
 			if(++now%100==0)System.out.println("[Parse2] Passed "+now+" of "+total+" items");
@@ -354,6 +354,21 @@ class AnalyzeKakaoTalk
 					if(friends.get(Long.parseLong(id))==null)name=name.replace(id,"(알수없음)");
 					else name=name.replace(id,friends.get(Long.parseLong(id)));
 				}
+			}
+			try
+			{
+				JSONArray array=(JSONArray)new JSONParser().parse(rs.getString("meta"));
+				for(int i=0;i<array.size();++i)
+				{
+					if(((Long)((JSONObject)array.get(i)).get("type")).intValue()==3)
+					{
+						name=(String)((JSONObject)array.get(i)).get("content");
+						break;
+					}
+				}
+			}
+			catch(Exception e)
+			{
 			}
 			try
 			{
@@ -483,7 +498,8 @@ class AnalyzeKakaoTalk
 						break;
 					}
 				}
-				row.createCell(2).setCellValue(types.get((int)rs.getLong("type")));
+				if(types.get((int)rs.getLong("type"))==null)row.createCell(2).setCellValue("알수없음("+rs.getLong("type")+")");
+				else row.createCell(2).setCellValue(types.get((int)rs.getLong("type")));
 				row.createCell(3).setCellValue(message);
 				row.createCell(4).setCellValue(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(rs.getLong("created_at")*1000)));
 				row.createCell(5).setCellValue(decode(rs.getLong("user_id"),enc,rs.getString("attachment")));
