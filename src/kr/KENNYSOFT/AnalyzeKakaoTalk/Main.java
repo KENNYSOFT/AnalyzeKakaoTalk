@@ -335,6 +335,17 @@ class AnalyzeKakaoTalk
 		int now=0,total;
 		System.out.println("[Parse2 START] KakaoTalk.db/chat_rooms");
 		HashMap<Long,SXSSFSheet> rooms=new HashMap<>();
+		SXSSFSheet sheet=(SXSSFSheet)workbook.createSheet("(대화방없음)");
+		sheet.setColumnWidth(3,288*32);
+		sheet.setColumnWidth(4,144*32);
+		SXSSFRow row=sheet.createRow(0);
+		row.createCell(0).setCellValue("보낸 사람");
+		row.createCell(1).setCellValue("보낸 사람 ID");
+		row.createCell(2).setCellValue("구분");
+		row.createCell(3).setCellValue("내용");
+		row.createCell(4).setCellValue("시간");
+		row.createCell(5).setCellValue("비고");
+		rooms.put(0L,sheet);
 		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk.db");
 		Statement statement=connection.createStatement();
 		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_rooms");
@@ -389,10 +400,10 @@ class AnalyzeKakaoTalk
 				}
 				name=name2;
 			}
-			SXSSFSheet sheet=(SXSSFSheet)workbook.createSheet(name);
+			sheet=(SXSSFSheet)workbook.createSheet(name);
 			sheet.setColumnWidth(3,288*32);
 			sheet.setColumnWidth(4,144*32);
-			SXSSFRow row=sheet.createRow(0);
+			row=sheet.createRow(0);
 			row.createCell(0).setCellValue("보낸 사람");
 			row.createCell(1).setCellValue("보낸 사람 ID");
 			row.createCell(2).setCellValue("구분");
@@ -463,7 +474,7 @@ class AnalyzeKakaoTalk
 			}
 			catch(Exception e)
 			{
-				continue;
+				row=rooms.get(0L).createRow(rooms.get(0L).getLastRowNum()+1);
 			}
 			try
 			{
