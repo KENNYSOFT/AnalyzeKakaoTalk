@@ -47,9 +47,8 @@ class AnalyzeKakaoTalk
 
 	static void getFiles() throws IOException,InterruptedException
 	{
-		Process proc=null;
 		System.out.println("[Get START]");
-		proc=Runtime.getRuntime().exec("assets\\adb shell pm path com.kakao.talk".split(" "));
+		Process proc=Runtime.getRuntime().exec("assets\\adb shell pm path com.kakao.talk".split(" "));
 		proc.waitFor();
 		BufferedReader br=new BufferedReader(new InputStreamReader(proc.getInputStream()));
 		String sLine;
@@ -525,6 +524,7 @@ class AnalyzeKakaoTalk
 		rs.close();
 		statement.close();
 		connection.close();
+		if(rooms.get(0L).getLastRowNum()==0)workbook.removeSheetAt(workbook.getSheetIndex(rooms.get(0L)));
 		workbook.write(new FileOutputStream(xlsx));
 		workbook.close();
 		System.out.println("[Analyze END]");

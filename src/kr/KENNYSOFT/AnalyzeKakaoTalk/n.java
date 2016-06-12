@@ -12,15 +12,15 @@ import org.bouncycastle.util.encoders.Base64;
  * Version: 3.7.0
  * Location: com.kakao.talk.util.n
  * 
- * 2. Append Prefix (~2)
+ * 2. Prefix List (~2)
  * Version: 4.3.0
  * Location: com.kakao.talk.util.jmfresedgb
  * 
- * 3. Full Prefix List (~16)
+ * 3. Prefix List (~16)
  * Version: 5.5.5
  * Location: o.aCa
  * 
- * 4. Full Prefix List (~17)
+ * 4. Prefix List (~17)
  * Version: 5.6.0
  * Location: ?
  */
@@ -32,7 +32,7 @@ public final class n
 	private Cipher d;
 	private Cipher e;
 	private int f;
-	private static final String[] prefix = { "", "", "12", "24", "18", "30", "36", "12", "48", "7", "35", "40", "17", "23", "29", "isabel", "kale", "sulli"};
+	private static final String[] prefix = { "", "", "12", "24", "18", "30", "36", "12", "48", "7", "35", "40", "17", "23", "29", "isabel", "kale", "sulli" };
 
 	public n(long paramLong, int paramInt) throws Exception
 	{
