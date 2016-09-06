@@ -27,6 +27,10 @@ import org.bouncycastle.util.encoders.Base64;
  * 5. Prefix List (~18)
  * Version: 5.6.8
  * Location: o.aGP
+ *
+ * 6. Prefix List (~19)
+ * Version: 5.8.3
+ * Location: o.yf
  */
 public final class n
 {
@@ -36,7 +40,7 @@ public final class n
 	private Cipher d;
 	private Cipher e;
 	private int f;
-	private static final String[] prefix = { "", "", "12", "24", "18", "30", "36", "12", "48", "7", "35", "40", "17", "23", "29", "isabel", "kale", "sulli", "van" };
+	private static final String[] prefix = { "", "", "12", "24", "18", "30", "36", "12", "48", "7", "35", "40", "17", "23", "29", "isabel", "kale", "sulli", "van", "merry" };
 
 	public n(long paramLong, int paramInt) throws Exception
 	{
