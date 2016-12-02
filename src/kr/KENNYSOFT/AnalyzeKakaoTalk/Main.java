@@ -146,7 +146,6 @@ class AnalyzeKakaoTalk
 		int now=0,total;
 		System.out.println("[Dump START] "+db+"/"+table+" -> "+csv+"");
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
-		buff.write("\ufeff");
 		CSVWriter writer=new CSVWriter(buff,',');
 		Connection connection=DriverManager.getConnection("jdbc:sqlite:"+db);
 		Statement statement=connection.createStatement();
@@ -184,7 +183,6 @@ class AnalyzeKakaoTalk
 		ArrayList<String> toDecode=new ArrayList<String>(Arrays.asList("message","attachment"));
 		System.out.println("[Decrypt START] KakaoTalk.db/chat_logs -> "+csv);
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
-		buff.write("\ufeff");
 		CSVWriter writer=new CSVWriter(buff,',');
 		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk.db");
 		Statement statement=connection.createStatement();
@@ -244,7 +242,6 @@ class AnalyzeKakaoTalk
 		System.out.println("[Decrypt2 START] KakaoTalk2.db/friends -> "+csv);
 		long userId=getUserId();
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
-		buff.write("\ufeff");
 		CSVWriter writer=new CSVWriter(buff,',');
 		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk2.db");
 		Statement statement=connection.createStatement();
@@ -338,12 +335,13 @@ class AnalyzeKakaoTalk
 		sheet.setColumnWidth(3,288*32);
 		sheet.setColumnWidth(4,144*32);
 		SXSSFRow row=sheet.createRow(0);
-		row.createCell(0).setCellValue("보낸 사람");
-		row.createCell(1).setCellValue("보낸 사람 ID");
-		row.createCell(2).setCellValue("구분");
-		row.createCell(3).setCellValue("내용");
-		row.createCell(4).setCellValue("시간");
-		row.createCell(5).setCellValue("비고");
+		row.createCell(0).setCellValue("ID");
+		row.createCell(1).setCellValue("보낸 사람");
+		row.createCell(2).setCellValue("보낸 사람 ID");
+		row.createCell(3).setCellValue("구분");
+		row.createCell(4).setCellValue("내용");
+		row.createCell(5).setCellValue("시간");
+		row.createCell(6).setCellValue("비고");
 		rooms.put(0L,sheet);
 		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk.db");
 		Statement statement=connection.createStatement();
@@ -400,15 +398,16 @@ class AnalyzeKakaoTalk
 				name=name2;
 			}
 			sheet=(SXSSFSheet)workbook.createSheet(name);
-			sheet.setColumnWidth(3,288*32);
-			sheet.setColumnWidth(4,144*32);
+			sheet.setColumnWidth(4,288*32);
+			sheet.setColumnWidth(5,144*32);
 			row=sheet.createRow(0);
-			row.createCell(0).setCellValue("보낸 사람");
-			row.createCell(1).setCellValue("보낸 사람 ID");
-			row.createCell(2).setCellValue("구분");
-			row.createCell(3).setCellValue("내용");
-			row.createCell(4).setCellValue("시간");
-			row.createCell(5).setCellValue("비고");
+			row.createCell(0).setCellValue("ID");
+			row.createCell(1).setCellValue("보낸 사람");
+			row.createCell(2).setCellValue("보낸 사람 ID");
+			row.createCell(3).setCellValue("구분");
+			row.createCell(4).setCellValue("내용");
+			row.createCell(5).setCellValue("시간");
+			row.createCell(6).setCellValue("비고");
 			rooms.put(rs.getLong("id"),sheet);
 		}
 		rs.close();
@@ -477,12 +476,13 @@ class AnalyzeKakaoTalk
 			}
 			try
 			{
+				row.createCell(0).setCellValue(rs.getLong("id"));
 				int enc;
 				if(rs.getString("v").contains("\"enc\":true"))enc=1;
 				else enc=Integer.parseInt(rs.getString("v").substring(rs.getString("v").indexOf("\"enc\":")+6).split("\\D+")[0]);
-				if(friends.get(rs.getLong("user_id"))==null)row.createCell(0).setCellValue("(알수없음)");
-				else row.createCell(0).setCellValue(friends.get(rs.getLong("user_id")));
-				row.createCell(1).setCellValue(rs.getLong("user_id"));
+				if(friends.get(rs.getLong("user_id"))==null)row.createCell(1).setCellValue("(알수없음)");
+				else row.createCell(1).setCellValue(friends.get(rs.getLong("user_id")));
+				row.createCell(2).setCellValue(rs.getLong("user_id"));
 				String message=decode(rs.getLong("user_id"),enc,rs.getString("message"));
 				if(rs.getLong("type")==0)
 				{
@@ -490,7 +490,7 @@ class AnalyzeKakaoTalk
 					switch(((Long)json.get("feedType")).intValue())
 					{
 					case 1:
-						message="== "+((JSONObject)json.get("inviter")).get("nickName")+"님이 ";
+						message=((JSONObject)json.get("inviter")).get("nickName")+"님이 ";
 						JSONArray members=(JSONArray)json.get("members");
 						for(int i=0;i<members.size();++i)
 						{
@@ -498,21 +498,28 @@ class AnalyzeKakaoTalk
 							if(i<members.size()-2) message=message+", ";
 							else if(i==members.size()-2)message=message+"과 ";
 						}
-						message=message+"을 초대했습니다. ==";
+						message=message+"을 초대했습니다.";
 						break;
 					case 2:
-						message="== "+(String)((JSONObject)json.get("member")).get("nickName")+"님이 나갔습니다. ==";
+						message=(String)((JSONObject)json.get("member")).get("nickName")+"님이 나갔습니다.";
 						break;
 					case 4:
-						message="== "+((JSONObject)((JSONArray)json.get("members")).get(0)).get("nickName")+"님이 들어왔습니다. ==";
+						message=((JSONObject)((JSONArray)json.get("members")).get(0)).get("nickName")+"님이 들어왔습니다.";
+						break;
+					case 5:
+						message="오픈채팅방 링크가 삭제되었습니다. 채팅방을 나가면 다시 참여할 수 없게됩니다.";
+						break;
+					case 6:
+						message="존재하지 않거나 삭제된 오픈채팅방입니다.";
 						break;
 					}
+					message="== "+message+" ==";
 				}
-				if(types.get((int)rs.getLong("type"))==null)row.createCell(2).setCellValue("알수없음("+rs.getLong("type")+")");
-				else row.createCell(2).setCellValue(types.get((int)rs.getLong("type")));
-				row.createCell(3).setCellValue(message);
-				row.createCell(4).setCellValue(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(rs.getLong("created_at")*1000)));
-				row.createCell(5).setCellValue(decode(rs.getLong("user_id"),enc,rs.getString("attachment")));
+				if(types.get((int)rs.getLong("type"))==null)row.createCell(3).setCellValue("알수없음("+rs.getLong("type")+")");
+				else row.createCell(3).setCellValue(types.get((int)rs.getLong("type")));
+				row.createCell(4).setCellValue(message);
+				row.createCell(5).setCellValue(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(rs.getLong("created_at")*1000)));
+				row.createCell(6).setCellValue(decode(rs.getLong("user_id"),enc,rs.getString("attachment")));
 			}
 			catch(Exception e)
 			{
