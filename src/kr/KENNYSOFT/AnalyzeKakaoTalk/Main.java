@@ -54,7 +54,10 @@ class AnalyzeKakaoTalk
 		String sLine;
 		while((sLine=br.readLine())!=null)if(sLine.startsWith("package:"))Runtime.getRuntime().exec(("assets\\adb pull "+sLine.substring("package:".length())+" KakaoTalk.apk").split(" ")).waitFor();
 		System.out.println("[Get] KakaoTalk.apk");
-		Runtime.getRuntime().exec("assets\\adb install -r -d assets\\kakaotalk210.apk".split(" ")).waitFor();
+		proc=Runtime.getRuntime().exec("assets\\adb install -r assets\\KakaoTalk210.apk".split(" "));
+		proc.waitFor();
+		br=new BufferedReader(new InputStreamReader(proc.getInputStream()));
+		while((sLine=br.readLine())!=null)if(sLine.contains("INSTALL_FAILED_VERSION_DOWNGRADE"))Runtime.getRuntime().exec("assets\\adb install -r -d assets\\KakaoTalk210.apk".split(" ")).waitFor();
 		System.out.println("[Get] Downgraded");
 		for(int i=1;;++i)
 		{
