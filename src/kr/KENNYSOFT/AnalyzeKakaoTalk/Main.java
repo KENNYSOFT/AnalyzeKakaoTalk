@@ -5,7 +5,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -97,7 +96,7 @@ class AnalyzeKakaoTalk
 	 * 
 	 * # Return Value : "pch"
 	 */
-	static String getEntry()
+	static String getUserIdEntry()
 	{
 		return bbqzplvtdp.kal("6d7e7e");
 	}
@@ -107,7 +106,7 @@ class AnalyzeKakaoTalk
 		String tag="name=\""+entry+"\">",ret=null;
 		try
 		{
-			BufferedReader in=new BufferedReader(new FileReader("KakaoTalk.perferences.xml"));
+			BufferedReader in=new BufferedReader(new InputStreamReader(new FileInputStream("KakaoTalk.perferences.xml"),"UTF-8"));
 			String s;
 			while((s=in.readLine())!=null)if(s.contains(tag))ret=s.substring(s.indexOf(tag)+tag.length()).split("<")[0];
 			in.close();
@@ -128,7 +127,7 @@ class AnalyzeKakaoTalk
 		cd localcd = new cd(egn);
 		try
 		{
-			return Long.valueOf(localcd.gga(getPreferenceValue(getEntry()))).longValue();
+			return Long.valueOf(localcd.gga(getPreferenceValue(getUserIdEntry()))).longValue();
 		}
 		catch(Exception e)
 		{
@@ -445,6 +444,7 @@ class AnalyzeKakaoTalk
 		types.put(23,"검색");
 		types.put(24,"게시판");
 		types.put(51,"보이스톡");
+		types.put(71,"광고");
 		types.put(81,"상세소식");
 		return types;
 	}
