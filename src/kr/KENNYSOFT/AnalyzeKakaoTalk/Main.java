@@ -35,16 +35,37 @@ import com.opencsv.CSVWriter;
 
 class AnalyzeKakaoTalk
 {
-	public static void main(String args[]) throws Exception
+	Connection connection,connection2;
+	Statement statement,statement2;
+	
+	AnalyzeKakaoTalk() throws SQLException
 	{
-		getFiles();
-		decrypt("KakaoTalk_decrypted.csv");
-		decrypt2("KakaoTalk2_decrypted.csv");
-		analyze("KakaoTalk_analyzed.xlsx");
-		deleteFiles();
+		connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk.db");
+		statement=connection.createStatement();
+		connection2=DriverManager.getConnection("jdbc:sqlite:KakaoTalk2.db");
+		statement2=connection2.createStatement();
+	}
+	
+	@Override
+	public void finalize() throws SQLException
+	{
+		statement.close();
+		connection.close();
+		statement2.close();
+		connection2.close();
+	}
+	
+	public static void main(String args[]) throws IOException,InterruptedException,SQLException
+	{
+		AnalyzeKakaoTalk analyzer=new AnalyzeKakaoTalk();
+		analyzer.getFiles();
+		analyzer.decrypt("KakaoTalk_decrypted.csv");
+		analyzer.decrypt2("KakaoTalk2_decrypted.csv");
+		analyzer.analyze("KakaoTalk_analyzed.xlsx");
+		analyzer.deleteFiles();
 	}
 
-	static void getFiles() throws IOException,InterruptedException
+	void getFiles() throws IOException,InterruptedException
 	{
 		System.out.println("[Get START]");
 		Process proc=Runtime.getRuntime().exec("assets\\adb shell pm path com.kakao.talk".split(" "));
@@ -84,7 +105,7 @@ class AnalyzeKakaoTalk
 		System.out.println("");
 	}
 
-	static void deleteFiles()
+	void deleteFiles()
 	{
 		String toDelete[]=new String[]{"KakaoTalk.apk","backup.ab","backup.tar","KakaoTalk.db","KakaoTalk2.db","KakaoTalk.perferences.xml"};
 		for(int i=0;i<toDelete.length;++i)new File(toDelete[i]).delete();
@@ -101,7 +122,7 @@ class AnalyzeKakaoTalk
 		return bbqzplvtdp.kal("6d7e7e");
 	}
 
-	static String getPreferenceValue(String entry)
+	String getPreferenceValue(String entry)
 	{
 		String tag="name=\""+entry+"\">",ret=null;
 		try
@@ -121,7 +142,7 @@ class AnalyzeKakaoTalk
 	 * Version: 4.3.0
 	 * Location: com.kakao.talk.nck.ao
 	 */
-	static long getUserId()
+	long getUserId()
 	{
 		byte[] egn = { 12, 10, -8, -43, -12, 44, 5, -8, -32, 7, 34, -24, -2, 3, 33, -33 };
 		cd localcd = new cd(egn);
@@ -135,7 +156,7 @@ class AnalyzeKakaoTalk
 		}
 	}
 
-	static String decode(long key,int enc,String message) throws Exception
+	String decode(long key,int enc,String message) throws Exception
 	{
 		if(message==null||message.startsWith("{\""))return message;
 		message=message.replace("　","").trim();
@@ -143,51 +164,13 @@ class AnalyzeKakaoTalk
 		return new n(key,enc).b(message);
 	}
 
-	static void dump(String db,String table,String csv) throws IOException,SQLException
-	{
-		int now=0,total;
-		System.out.println("[Dump START] "+db+"/"+table+" -> "+csv+"");
-		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
-		CSVWriter writer=new CSVWriter(buff,',');
-		Connection connection=DriverManager.getConnection("jdbc:sqlite:"+db);
-		Statement statement=connection.createStatement();
-		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM "+table);
-		rs.next();
-		total=rs.getInt(1);
-		rs.close();
-		rs=statement.executeQuery("SELECT * FROM "+table);
-		ResultSetMetaData rsmd=rs.getMetaData();
-		String[] line=new String[rsmd.getColumnCount()];
-		for(int i=0;i<rsmd.getColumnCount();++i)line[i]=rsmd.getColumnName(i+1);
-		writer.writeNext(line);
-		while(rs.next())
-		{
-			if(++now%10000==0)System.out.println("[Dump] Passed "+now+" of "+total+" items");
-			for(int i=0;i<rsmd.getColumnCount();++i)
-			{
-				if(rsmd.getColumnType(i+1)==Types.INTEGER)line[i]=String.valueOf(rs.getLong(i+1));
-				else line[i]=rs.getString(i+1);
-			}
-			writer.writeNext(line);
-		}
-		rs.close();
-		statement.close();
-		connection.close();
-		writer.close();
-		buff.close();
-		System.out.println("[Dump END]");
-		System.out.println("");
-	}
-
-	static void decrypt(String csv) throws IOException,SQLException
+	void decrypt(String csv) throws IOException,SQLException
 	{
 		int now=0,total;
 		ArrayList<String> toDecode=new ArrayList<String>(Arrays.asList("message","attachment"));
 		System.out.println("[Decrypt START] KakaoTalk.db/chat_logs -> "+csv);
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
 		CSVWriter writer=new CSVWriter(buff,',');
-		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk.db");
-		Statement statement=connection.createStatement();
 		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_logs");
 		rs.next();
 		total=rs.getInt(1);
@@ -229,15 +212,13 @@ class AnalyzeKakaoTalk
 			writer.writeNext(line);
 		}
 		rs.close();
-		statement.close();
-		connection.close();
 		writer.close();
 		buff.close();
 		System.out.println("[Decrypt END]");
 		System.out.println("");
 	}
 
-	static void decrypt2(String csv) throws IOException,SQLException
+	void decrypt2(String csv) throws IOException,SQLException
 	{
 		int now=0,total;
 		ArrayList<String> toDecode=new ArrayList<String>(Arrays.asList("uuid","phone_number","raw_phone_number","name","profile_image_url","full_profile_image_url","original_profile_image_url","status_message","v","ext","nick_name","contact_name","board_v"));
@@ -245,13 +226,11 @@ class AnalyzeKakaoTalk
 		long userId=getUserId();
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
 		CSVWriter writer=new CSVWriter(buff,',');
-		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk2.db");
-		Statement statement=connection.createStatement();
-		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM friends");
+		ResultSet rs=statement2.executeQuery("SELECT COUNT(*) FROM friends");
 		rs.next();
 		total=rs.getInt(1);
 		rs.close();
-		rs=statement.executeQuery("SELECT * FROM friends");
+		rs=statement2.executeQuery("SELECT * FROM friends");
 		ResultSetMetaData rsmd=rs.getMetaData();
 		String[] line=new String[rsmd.getColumnCount()];
 		for(int i=0;i<rsmd.getColumnCount();++i)line[i]=rsmd.getColumnName(i+1);
@@ -281,28 +260,24 @@ class AnalyzeKakaoTalk
 			writer.writeNext(line);
 		}
 		rs.close();
-		statement.close();
-		connection.close();
 		writer.close();
 		buff.close();
 		System.out.println("[Decrypt2 END]");
 		System.out.println("");
 	}
 	
-	static HashMap<Long,String> parseFriends() throws IOException,SQLException
+	HashMap<Long,String> parseFriends() throws IOException,SQLException
 	{
 		int now=0,total;
 		System.out.println("[Parse START] KakaoTalk2.db/friends");
 		HashMap<Long,String> friends=new HashMap<>();
 		long userId=getUserId();
 		friends.put(userId,getPreferenceValue("nickName"));
-		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk2.db");
-		Statement statement=connection.createStatement();
-		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM friends");
+		ResultSet rs=statement2.executeQuery("SELECT COUNT(*) FROM friends");
 		rs.next();
 		total=rs.getInt(1);
 		rs.close();
-		rs=statement.executeQuery("SELECT * FROM friends");
+		rs=statement2.executeQuery("SELECT * FROM friends");
 		while(rs.next())
 		{
 			if(++now%1000==0)System.out.println("[Parse] Passed "+now+" of "+total+" items");
@@ -321,17 +296,46 @@ class AnalyzeKakaoTalk
 			}
 		}
 		rs.close();
-		statement.close();
-		connection.close();
 		System.out.println("[Parse END]");
 		System.out.println("");
 		return friends;
 	}
 	
-	static HashMap<Long,SXSSFSheet> parseRooms(SXSSFWorkbook workbook,HashMap<Long,String> friends) throws SQLException
+	HashMap<Long,String> parseOpenProfiles() throws IOException,SQLException
 	{
 		int now=0,total;
-		System.out.println("[Parse2 START] KakaoTalk.db/chat_rooms");
+		System.out.println("[Parse START] KakaoTalk.db/chat_rooms");
+		HashMap<Long,String> openProfiles=new HashMap<>();
+		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_rooms WHERE link_id<>-1");
+		rs.next();
+		total=rs.getInt(1);
+		rs.close();
+		rs=statement.executeQuery("SELECT * FROM chat_rooms WHERE link_id<>-1");
+		while(rs.next())
+		{
+			if(++now%1000==0)System.out.println("[Parse] Passed "+now+" of "+total+" items");
+			try
+			{
+				ResultSet rs2=statement2.executeQuery("SELECT * FROM open_profile WHERE link_id="+rs.getLong("link_id"));
+				if(rs2.next())openProfiles.put(rs.getLong("id"),rs2.getString("nickname"));
+			}
+			catch(Exception e)
+			{
+				System.out.println("[Parse] Error occured at "+rs.getInt("_id"));
+				e.printStackTrace();
+				continue;
+			}
+		}
+		rs.close();
+		System.out.println("[Parse END]");
+		System.out.println("");
+		return openProfiles;
+	}
+	
+	HashMap<Long,SXSSFSheet> parseRooms(SXSSFWorkbook workbook,HashMap<Long,String> friends) throws SQLException
+	{
+		int now=0,total;
+		System.out.println("[Parse START] KakaoTalk.db/chat_rooms");
 		HashMap<Long,SXSSFSheet> rooms=new HashMap<>();
 		SXSSFSheet sheet=(SXSSFSheet)workbook.createSheet("(대화방없음)");
 		sheet.setColumnWidth(3,288*32);
@@ -345,8 +349,6 @@ class AnalyzeKakaoTalk
 		row.createCell(5).setCellValue("시간");
 		row.createCell(6).setCellValue("비고");
 		rooms.put(0L,sheet);
-		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk.db");
-		Statement statement=connection.createStatement();
 		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_rooms");
 		rs.next();
 		total=rs.getInt(1);
@@ -354,7 +356,7 @@ class AnalyzeKakaoTalk
 		rs=statement.executeQuery("SELECT * FROM chat_rooms ORDER BY last_log_id DESC");
 		while(rs.next())
 		{
-			if(++now%100==0)System.out.println("[Parse2] Passed "+now+" of "+total+" items");
+			if(++now%100==0)System.out.println("[Parse] Passed "+now+" of "+total+" items");
 			String name=rs.getString("active_member_ids").replace("[","").replace("]","");
 			if(name.length()==0)name="대화상대없음";
 			else
@@ -367,6 +369,11 @@ class AnalyzeKakaoTalk
 			}
 			try
 			{
+				if(rs.getLong("link_id")!=-1)
+				{
+					ResultSet rs2=statement2.executeQuery("SELECT * FROM open_link WHERE id="+rs.getLong("link_id"));
+					if(rs2.next())name=rs2.getString("name");
+				}
 				JSONArray array=(JSONArray)new JSONParser().parse(rs.getString("meta"));
 				for(int i=0;i<array.size();++i)
 				{
@@ -413,14 +420,12 @@ class AnalyzeKakaoTalk
 			rooms.put(rs.getLong("id"),sheet);
 		}
 		rs.close();
-		statement.close();
-		connection.close();
-		System.out.println("[Parse2 END]");
+		System.out.println("[Parse END]");
 		System.out.println("");
 		return rooms;
 	}
 	
-	static HashMap<Integer,String> parseTypes()
+	HashMap<Integer,String> parseTypes()
 	{
 		HashMap<Integer,String> types=new HashMap<>();
 		types.put(0,"시스템");
@@ -449,17 +454,16 @@ class AnalyzeKakaoTalk
 		return types;
 	}
 
-	static void analyze(String xlsx) throws IOException,SQLException
+	void analyze(String xlsx) throws IOException,SQLException
 	{
 		int now=0,total;
 		SXSSFWorkbook workbook=new SXSSFWorkbook();
 		workbook.getXSSFWorkbook().getProperties().getCoreProperties().setCreator("AnalyzeKakaoTalk");
 		HashMap<Long,String> friends=parseFriends();
+		HashMap<Long,String> openProfiles=parseOpenProfiles();
 		HashMap<Long,SXSSFSheet> rooms=parseRooms(workbook,friends);
 		HashMap<Integer,String> types=parseTypes();
 		System.out.println("[Analyze START] KakaoTalk -> "+xlsx);
-		Connection connection=DriverManager.getConnection("jdbc:sqlite:KakaoTalk.db");
-		Statement statement=connection.createStatement();
 		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_logs");
 		rs.next();
 		total=rs.getInt(1);
@@ -483,7 +487,8 @@ class AnalyzeKakaoTalk
 				int enc;
 				if(rs.getString("v").contains("\"enc\":true"))enc=1;
 				else enc=Integer.parseInt(rs.getString("v").substring(rs.getString("v").indexOf("\"enc\":")+6).split("\\D+")[0]);
-				if(friends.get(rs.getLong("user_id"))==null)row.createCell(1).setCellValue("(알수없음)");
+				if(rs.getLong("user_id")==getUserId()&&openProfiles.get(rs.getLong("chat_id"))!=null)row.createCell(1).setCellValue(openProfiles.get(rs.getLong("chat_id")));
+				else if(friends.get(rs.getLong("user_id"))==null)row.createCell(1).setCellValue("(알수없음)");
 				else row.createCell(1).setCellValue(friends.get(rs.getLong("user_id")));
 				row.createCell(2).setCellValue(rs.getLong("user_id"));
 				String message=decode(rs.getLong("user_id"),enc,rs.getString("message"));
@@ -532,8 +537,6 @@ class AnalyzeKakaoTalk
 			}
 		}
 		rs.close();
-		statement.close();
-		connection.close();
 		if(rooms.get(0L).getLastRowNum()==0)workbook.removeSheetAt(workbook.getSheetIndex(rooms.get(0L)));
 		workbook.write(new FileOutputStream(xlsx));
 		workbook.close();
