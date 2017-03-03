@@ -15,7 +15,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -23,6 +22,10 @@ import java.util.HashMap;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IgnoredErrorType;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.WorkbookUtil;
 import org.apache.poi.xssf.streaming.SXSSFRow;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
@@ -166,9 +169,9 @@ class AnalyzeKakaoTalk
 
 	void decrypt(String csv) throws IOException,SQLException
 	{
+		System.out.println("[Decrypt START] KakaoTalk.db/chat_logs -> "+csv);
 		int now=0,total;
 		ArrayList<String> toDecode=new ArrayList<String>(Arrays.asList("message","attachment"));
-		System.out.println("[Decrypt START] KakaoTalk.db/chat_logs -> "+csv);
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
 		CSVWriter writer=new CSVWriter(buff,',');
 		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_logs");
@@ -220,9 +223,9 @@ class AnalyzeKakaoTalk
 
 	void decrypt2(String csv) throws IOException,SQLException
 	{
+		System.out.println("[Decrypt2 START] KakaoTalk2.db/friends -> "+csv);
 		int now=0,total;
 		ArrayList<String> toDecode=new ArrayList<String>(Arrays.asList("uuid","phone_number","raw_phone_number","name","profile_image_url","full_profile_image_url","original_profile_image_url","status_message","v","ext","nick_name","contact_name","board_v"));
-		System.out.println("[Decrypt2 START] KakaoTalk2.db/friends -> "+csv);
 		long userId=getUserId();
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
 		CSVWriter writer=new CSVWriter(buff,',');
@@ -303,8 +306,8 @@ class AnalyzeKakaoTalk
 	
 	HashMap<Long,String> parseOpenProfiles() throws IOException,SQLException
 	{
-		int now=0,total;
 		System.out.println("[Parse START] KakaoTalk.db/chat_rooms");
+		int now=0,total;
 		HashMap<Long,String> openProfiles=new HashMap<>();
 		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_rooms WHERE link_id<>-1");
 		rs.next();
@@ -334,16 +337,23 @@ class AnalyzeKakaoTalk
 	
 	HashMap<Long,SXSSFSheet> parseRooms(SXSSFWorkbook workbook,HashMap<Long,String> friends) throws SQLException
 	{
-		int now=0,total;
 		System.out.println("[Parse START] KakaoTalk.db/chat_rooms");
+		int now=0,total;
 		HashMap<Long,SXSSFSheet> rooms=new HashMap<>();
-		SXSSFSheet sheet=(SXSSFSheet)workbook.createSheet("(대화방없음)");
-		sheet.setColumnWidth(3,288*32);
-		sheet.setColumnWidth(4,144*32);
+		SXSSFSheet sheet=workbook.createSheet("(대화방없음)");
+		workbook.getXSSFWorkbook().getSheet("(대화방없음)").addIgnoredErrors(new CellRangeAddress(0,1048575,0,6),IgnoredErrorType.NUMBER_STORED_AS_TEXT);
+		sheet.setAutoFilter(new CellRangeAddress(0,1048575,0,6));
+		sheet.createFreezePane(0,1);
+		sheet.setColumnWidth(0,180*32);
+		sheet.setColumnWidth(1,108*32);
+		sheet.setColumnWidth(4,288*32);
+		sheet.setColumnWidth(5,144*32);
+		sheet.setColumnHidden(0,true);
+		sheet.setColumnHidden(1,true);
 		SXSSFRow row=sheet.createRow(0);
 		row.createCell(0).setCellValue("ID");
-		row.createCell(1).setCellValue("보낸 사람");
-		row.createCell(2).setCellValue("보낸 사람 ID");
+		row.createCell(1).setCellValue("보낸 사람 ID");
+		row.createCell(2).setCellValue("보낸 사람");
 		row.createCell(3).setCellValue("구분");
 		row.createCell(4).setCellValue("내용");
 		row.createCell(5).setCellValue("시간");
@@ -406,13 +416,20 @@ class AnalyzeKakaoTalk
 				}
 				name=name2;
 			}
-			sheet=(SXSSFSheet)workbook.createSheet(name);
+			sheet=workbook.createSheet(name);
+			workbook.getXSSFWorkbook().getSheet(name).addIgnoredErrors(new CellRangeAddress(0,1048575,0,6),IgnoredErrorType.NUMBER_STORED_AS_TEXT);
+			sheet.setAutoFilter(new CellRangeAddress(0,1048575,0,6));
+			sheet.createFreezePane(0,1);
+			sheet.setColumnWidth(0,180*32);
+			sheet.setColumnWidth(1,108*32);
 			sheet.setColumnWidth(4,288*32);
 			sheet.setColumnWidth(5,144*32);
+			sheet.setColumnHidden(0,true);
+			sheet.setColumnHidden(1,true);
 			row=sheet.createRow(0);
 			row.createCell(0).setCellValue("ID");
-			row.createCell(1).setCellValue("보낸 사람");
-			row.createCell(2).setCellValue("보낸 사람 ID");
+			row.createCell(1).setCellValue("보낸 사람 ID");
+			row.createCell(2).setCellValue("보낸 사람");
 			row.createCell(3).setCellValue("구분");
 			row.createCell(4).setCellValue("내용");
 			row.createCell(5).setCellValue("시간");
@@ -456,14 +473,22 @@ class AnalyzeKakaoTalk
 
 	void analyze(String xlsx) throws IOException,SQLException
 	{
+		System.out.println("[Analyze START] KakaoTalk -> "+xlsx);
+		System.out.println("");
 		int now=0,total;
 		SXSSFWorkbook workbook=new SXSSFWorkbook();
-		workbook.getXSSFWorkbook().getProperties().getCoreProperties().setCreator("AnalyzeKakaoTalk");
 		HashMap<Long,String> friends=parseFriends();
 		HashMap<Long,String> openProfiles=parseOpenProfiles();
 		HashMap<Long,SXSSFSheet> rooms=parseRooms(workbook,friends);
+		HashMap<Long,Long> prevIds=new HashMap<>();
 		HashMap<Integer,String> types=parseTypes();
-		System.out.println("[Analyze START] KakaoTalk -> "+xlsx);
+		Font boldFont=workbook.createFont();
+		boldFont.setBold(true);
+		CellStyle boldStyle=workbook.createCellStyle();
+		boldStyle.setFont(boldFont);
+		CellStyle dateStyle=workbook.createCellStyle();
+		dateStyle.setDataFormat(workbook.getCreationHelper().createDataFormat().getFormat("yyyy-mm-dd hh:mm:ss"));
+		workbook.getXSSFWorkbook().getProperties().getCoreProperties().setCreator("AnalyzeKakaoTalk");
 		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_logs");
 		rs.next();
 		total=rs.getInt(1);
@@ -472,25 +497,34 @@ class AnalyzeKakaoTalk
 		while(rs.next())
 		{
 			if(++now%10000==0)System.out.println("[Analyze] Passed "+now+" of "+total+" items");
-			SXSSFRow row=null;
+			SXSSFSheet sheet=null;
+			if(rooms.containsKey(rs.getLong("chat_id")))
+			{
+				sheet=rooms.get(rs.getLong("chat_id"));
+				if(prevIds.containsKey(rs.getLong("chat_id"))&&prevIds.get(rs.getLong("chat_id"))!=rs.getLong("prev_id"))
+				{
+					SXSSFRow row=sheet.createRow(sheet.getLastRowNum()+1);
+					for(int i=0;i<=6;++i)row.createCell(i);
+					sheet.addMergedRegion(new CellRangeAddress(row.getRowNum(),row.getRowNum(),0,5));
+					row.getCell(0).setCellStyle(boldStyle);
+					row.getCell(0).setCellValue("최근 네트워크에 연결되지 않아 오래된 대화를 확인하지 못했습니다.");
+					row.getCell(6).setCellValue("2~3일이 지난 메시지는 프라이버시 보호를 위해 서버에서 완전히 삭제됩니다. 휴대폰을 꺼놓거나 네트워크에 연결이 되지 않은 경우 2~3일이 지난 메시지는 확인이 어려울 수 있습니다.");
+				}
+				prevIds.put(rs.getLong("chat_id"),rs.getLong("id"));
+			}
+			else sheet=rooms.get(0L);
+			SXSSFRow row=sheet.createRow(sheet.getLastRowNum()+1);
+			for(int i=0;i<=6;++i)row.createCell(i);
 			try
 			{
-				row=rooms.get(rs.getLong("chat_id")).createRow(rooms.get(rs.getLong("chat_id")).getLastRowNum()+1);
-			}
-			catch(Exception e)
-			{
-				row=rooms.get(0L).createRow(rooms.get(0L).getLastRowNum()+1);
-			}
-			try
-			{
-				row.createCell(0).setCellValue(rs.getLong("id"));
+				row.getCell(0).setCellValue(""+rs.getLong("id"));
+				row.getCell(1).setCellValue(""+rs.getLong("user_id"));
 				int enc;
 				if(rs.getString("v").contains("\"enc\":true"))enc=1;
 				else enc=Integer.parseInt(rs.getString("v").substring(rs.getString("v").indexOf("\"enc\":")+6).split("\\D+")[0]);
-				if(rs.getLong("user_id")==getUserId()&&openProfiles.get(rs.getLong("chat_id"))!=null)row.createCell(1).setCellValue(openProfiles.get(rs.getLong("chat_id")));
-				else if(friends.get(rs.getLong("user_id"))==null)row.createCell(1).setCellValue("(알수없음)");
-				else row.createCell(1).setCellValue(friends.get(rs.getLong("user_id")));
-				row.createCell(2).setCellValue(rs.getLong("user_id"));
+				if(rs.getLong("user_id")==getUserId()&&openProfiles.get(rs.getLong("chat_id"))!=null)row.getCell(2).setCellValue(openProfiles.get(rs.getLong("chat_id")));
+				else if(friends.get(rs.getLong("user_id"))==null)row.getCell(2).setCellValue("(알수없음)");
+				else row.getCell(2).setCellValue(friends.get(rs.getLong("user_id")));
 				String message=decode(rs.getLong("user_id"),enc,rs.getString("message"));
 				if(rs.getLong("type")==0)
 				{
@@ -523,11 +557,12 @@ class AnalyzeKakaoTalk
 					}
 					message="== "+message+" ==";
 				}
-				if(types.get((int)rs.getLong("type"))==null)row.createCell(3).setCellValue("알수없음("+rs.getLong("type")+")");
-				else row.createCell(3).setCellValue(types.get((int)rs.getLong("type")));
-				row.createCell(4).setCellValue(message);
-				row.createCell(5).setCellValue(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(rs.getLong("created_at")*1000)));
-				row.createCell(6).setCellValue(decode(rs.getLong("user_id"),enc,rs.getString("attachment")));
+				if(types.get((int)rs.getLong("type"))==null)row.getCell(3).setCellValue("알수없음("+rs.getLong("type")+")");
+				else row.getCell(3).setCellValue(types.get((int)rs.getLong("type")));
+				row.getCell(4).setCellValue(message);
+				row.getCell(5).setCellStyle(dateStyle);
+				row.getCell(5).setCellValue(new Date(rs.getLong("created_at")*1000));
+				row.getCell(6).setCellValue(decode(rs.getLong("user_id"),enc,rs.getString("attachment")));
 			}
 			catch(Exception e)
 			{
