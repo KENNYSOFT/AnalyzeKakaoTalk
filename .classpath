@@ -1,15 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="libs/sqlite-jdbc-3.8.11.1.jar"/>
-	<classpathentry kind="lib" path="libs/opencsv-3.7.jar"/>
-	<classpathentry kind="lib" path="libs/commons-lang3-3.4.jar"/>
-	<classpathentry kind="lib" path="libs/commons-compress-1.11.jar"/>
-	<classpathentry kind="lib" path="libs/poi-3.14-20160307.jar"/>
-	<classpathentry kind="lib" path="libs/poi-ooxml-3.14-20160307.jar"/>
-	<classpathentry kind="lib" path="libs/poi-ooxml-schemas-3.14-20160307.jar"/>
-	<classpathentry kind="lib" path="libs/xmlbeans-2.6.0.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="libs/bcprov-jdk15on-158.jar"/>
+	<classpathentry kind="lib" path="libs/commons-collections4-4.1.jar"/>
+	<classpathentry kind="lib" path="libs/commons-compress-1.14.jar"/>
 	<classpathentry kind="lib" path="libs/json-simple-1.1.1.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="libs/opencsv-4.0.jar"/>
+	<classpathentry kind="lib" path="libs/poi-3.17.jar"/>
+	<classpathentry kind="lib" path="libs/poi-ooxml-3.17.jar"/>
+	<classpathentry kind="lib" path="libs/poi-ooxml-schemas-3.17.jar"/>
+	<classpathentry kind="lib" path="libs/sqlite-jdbc-3.20.0.jar"/>
+	<classpathentry kind="lib" path="libs/xmlbeans-2.6.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
