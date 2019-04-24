@@ -91,7 +91,7 @@ public class AnalyzeKakaoTalk
 			if(i==1)System.out.println("[Get] Please check the screen");
 			else System.out.println("[Get] Please check the screen ("+i+")");
 			Runtime.getRuntime().exec("assets\\adb backup com.kakao.talk".split(" ")).waitFor();
-			if(Runtime.getRuntime().exec("java -jar assets\\abe.jar unpack backup.ab backup.tar".split(" ")).waitFor()==0)break;
+			if(Runtime.getRuntime().exec("java -jar assets\\abe-all.jar unpack backup.ab backup.tar".split(" ")).waitFor()==0)break;
 		}
 		Runtime.getRuntime().exec("assets\\adb install -r KakaoTalk.apk".split(" "));
 		System.out.println("[Get] backup.tar");
