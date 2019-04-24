@@ -43,6 +43,10 @@ import org.bouncycastle.util.encoders.Base64;
  * 9. Prefix List (~23)
  * Version: 6.4.6
  * Location: com.kakao.talk.util.s
+ * 
+ * 10. Prefix List (~26)
+ * Version: 8.3.0
+ * Location: com.kakao.talk.util.DataBaseResourceCrypto
  */
 public final class n
 {
@@ -52,7 +56,7 @@ public final class n
 	private Cipher d;
 	private Cipher e;
 	private int f;
-	private static final String[] prefix = { "", "", "12", "24", "18", "30", "36", "12", "48", "7", "35", "40", "17", "23", "29", "isabel", "kale", "sulli", "van", "merry", "kyle", "james", "maddux", "tony" };
+	private static final String[] prefix = { "", "", "12", "24", "18", "30", "36", "12", "48", "7", "35", "40", "17", "23", "29", "isabel", "kale", "sulli", "van", "merry", "kyle", "james", "maddux", "tony", "hayden", "paul", "elijah" };
 
 	public n(long paramLong, int paramInt) throws Exception
 	{
