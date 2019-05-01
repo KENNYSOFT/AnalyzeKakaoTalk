@@ -396,7 +396,6 @@ public class AnalyzeKakaoTalk
 						name=(String)((JSONObject)array.get(i)).get("content");
 						break;
 					}
-					// TODO: case 1, 6: 공지 / 오픈채팅 뭐시기
 				}
 			}
 			catch(Exception e)
