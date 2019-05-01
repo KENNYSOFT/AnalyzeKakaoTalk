@@ -502,10 +502,13 @@ public class AnalyzeKakaoTalk
 		{
 			if(++now%10000==0)System.out.println("[Analyze] Passed "+now+" of "+total+" items");
 			SXSSFSheet sheet=null;
-			if(rooms.containsKey(rs.getLong("chat_id")))
+			long id=rs.getLong("id");
+			long chat_id=rs.getLong("chat_id");
+			if(rooms.containsKey(chat_id))
 			{
-				sheet=rooms.get(rs.getLong("chat_id"));
-				if(prevIds.containsKey(rs.getLong("chat_id"))&&prevIds.get(rs.getLong("chat_id"))!=rs.getLong("prev_id"))
+				long prev_id=rs.getLong("prev_id");
+				sheet=rooms.get(chat_id);
+				if(prev_id!=0&&prevIds.containsKey(chat_id)&&prevIds.get(chat_id)!=prev_id)
 				{
 					SXSSFRow row=sheet.createRow(sheet.getLastRowNum()+1);
 					for(int i=0;i<=6;++i)row.createCell(i);
@@ -514,23 +517,25 @@ public class AnalyzeKakaoTalk
 					row.getCell(0).setCellValue("최근 네트워크에 연결되지 않아 오래된 대화를 확인하지 못했습니다.");
 					row.getCell(6).setCellValue("2~3일이 지난 메시지는 프라이버시 보호를 위해 서버에서 완전히 삭제됩니다. 휴대폰을 꺼놓거나 네트워크에 연결이 되지 않은 경우 2~3일이 지난 메시지는 확인이 어려울 수 있습니다.");
 				}
-				prevIds.put(rs.getLong("chat_id"),rs.getLong("id"));
+				prevIds.put(chat_id,id);
 			}
 			else sheet=rooms.get(0L);
 			SXSSFRow row=sheet.createRow(sheet.getLastRowNum()+1);
 			for(int i=0;i<=6;++i)row.createCell(i);
 			try
 			{
-				row.getCell(0).setCellValue(""+rs.getLong("id"));
-				row.getCell(1).setCellValue(""+rs.getLong("user_id"));
+				long user_id=rs.getLong("user_id");
+				row.getCell(0).setCellValue(String.valueOf(id));
+				row.getCell(1).setCellValue(String.valueOf(user_id));
+				int type=rs.getInt("type");
 				int enc;
 				if(rs.getString("v").contains("\"enc\":true"))enc=1;
 				else enc=Integer.parseInt(rs.getString("v").substring(rs.getString("v").indexOf("\"enc\":")+6).split("\\D+")[0]);
-				if(rs.getLong("user_id")==getUserId()&&openProfiles.get(rs.getLong("chat_id"))!=null)row.getCell(2).setCellValue(openProfiles.get(rs.getLong("chat_id")));
-				else if(friends.get(rs.getLong("user_id"))==null)row.getCell(2).setCellValue("(알수없음)");
-				else row.getCell(2).setCellValue(friends.get(rs.getLong("user_id")));
-				String message=decode(rs.getLong("user_id"),enc,rs.getString("message"));
-				if(rs.getLong("type")==0)
+				if(user_id==getUserId()&&openProfiles.get(chat_id)!=null)row.getCell(2).setCellValue(openProfiles.get(chat_id));
+				else if(friends.get(user_id)==null)row.getCell(2).setCellValue("(알수없음)");
+				else row.getCell(2).setCellValue(friends.get(user_id));
+				String message=decode(user_id,enc,rs.getString("message"));
+				if(type==0)
 				{
 					JSONObject json=(JSONObject)new JSONParser().parse(message);
 					switch(((Long)json.get("feedType")).intValue())
@@ -561,12 +566,12 @@ public class AnalyzeKakaoTalk
 					}
 					message="== "+message+" ==";
 				}
-				if(types.get((int)rs.getLong("type"))==null)row.getCell(3).setCellValue("알수없음("+rs.getLong("type")+")");
-				else row.getCell(3).setCellValue(types.get((int)rs.getLong("type")));
+				if(types.get(type)==null)row.getCell(3).setCellValue("알수없음("+type+")");
+				else row.getCell(3).setCellValue(types.get(type));
 				row.getCell(4).setCellValue(message);
 				row.getCell(5).setCellStyle(dateStyle);
 				row.getCell(5).setCellValue(new Date(rs.getLong("created_at")*1000));
-				row.getCell(6).setCellValue(decode(rs.getLong("user_id"),enc,rs.getString("attachment")));
+				row.getCell(6).setCellValue(decode(user_id,enc,rs.getString("attachment")));
 			}
 			catch(Exception e)
 			{
