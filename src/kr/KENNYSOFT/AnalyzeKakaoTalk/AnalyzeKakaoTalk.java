@@ -21,16 +21,18 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.IgnoredErrorType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.WorkbookUtil;
-import org.apache.poi.xssf.streaming.SXSSFRow;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.simple.JSONArray;
@@ -273,11 +275,11 @@ public class AnalyzeKakaoTalk
 		System.out.println("");
 	}
 	
-	HashMap<Long,String> parseFriends() throws IOException,SQLException
+	Map<Long,String> parseFriends() throws IOException,SQLException
 	{
 		int now=0,total;
 		System.out.println("[Parse START] KakaoTalk2.db/friends");
-		HashMap<Long,String> friends=new HashMap<>();
+		Map<Long,String> friends=new HashMap<>();
 		long userId=getUserId();
 		friends.put(userId,getPreferenceValue("nickName"));
 		ResultSet rs=statement2.executeQuery("SELECT COUNT(*) FROM friends");
@@ -308,11 +310,11 @@ public class AnalyzeKakaoTalk
 		return friends;
 	}
 	
-	HashMap<Long,String> parseOpenProfiles() throws IOException,SQLException
+	Map<Long,String> parseOpenProfiles() throws IOException,SQLException
 	{
 		System.out.println("[Parse START] KakaoTalk.db/chat_rooms");
 		int now=0,total;
-		HashMap<Long,String> openProfiles=new HashMap<>();
+		Map<Long,String> openProfiles=new HashMap<>();
 		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_rooms WHERE link_id<>-1");
 		rs.next();
 		total=rs.getInt(1);
@@ -339,13 +341,13 @@ public class AnalyzeKakaoTalk
 		return openProfiles;
 	}
 	
-	HashMap<Long,SXSSFSheet> parseRooms(SXSSFWorkbook workbook,HashMap<Long,String> friends) throws SQLException
+	Map<Long,Sheet> parseRooms(Workbook workbook,Map<Long,String> friends) throws SQLException
 	{
 		System.out.println("[Parse START] KakaoTalk.db/chat_rooms");
 		int now=0,total;
-		HashMap<Long,SXSSFSheet> rooms=new HashMap<>();
-		SXSSFSheet sheet=workbook.createSheet("(대화방없음)");
-		workbook.getXSSFWorkbook().getSheet("(대화방없음)").addIgnoredErrors(new CellRangeAddress(0,1048575,0,6),IgnoredErrorType.NUMBER_STORED_AS_TEXT);
+		Map<Long,Sheet> rooms=new HashMap<>();
+		Sheet sheet=workbook.createSheet("(대화방없음)");
+		((SXSSFWorkbook)workbook).getXSSFWorkbook().getSheet("(대화방없음)").addIgnoredErrors(new CellRangeAddress(0,1048575,0,6),IgnoredErrorType.NUMBER_STORED_AS_TEXT);
 		sheet.setAutoFilter(new CellRangeAddress(0,1048575,0,6));
 		sheet.createFreezePane(0,1);
 		sheet.setColumnWidth(0,180*32);
@@ -354,7 +356,7 @@ public class AnalyzeKakaoTalk
 		sheet.setColumnWidth(5,144*32);
 		sheet.setColumnHidden(0,true);
 		sheet.setColumnHidden(1,true);
-		SXSSFRow row=sheet.createRow(0);
+		Row row=sheet.createRow(0);
 		row.createCell(0).setCellValue("ID");
 		row.createCell(1).setCellValue("보낸 사람 ID");
 		row.createCell(2).setCellValue("보낸 사람");
@@ -421,7 +423,7 @@ public class AnalyzeKakaoTalk
 				name=name2;
 			}
 			sheet=workbook.createSheet(name);
-			workbook.getXSSFWorkbook().getSheet(name).addIgnoredErrors(new CellRangeAddress(0,1048575,0,6),IgnoredErrorType.NUMBER_STORED_AS_TEXT);
+			((SXSSFWorkbook)workbook).getXSSFWorkbook().getSheet(name).addIgnoredErrors(new CellRangeAddress(0,1048575,0,6),IgnoredErrorType.NUMBER_STORED_AS_TEXT);
 			sheet.setAutoFilter(new CellRangeAddress(0,1048575,0,6));
 			sheet.createFreezePane(0,1);
 			sheet.setColumnWidth(0,180*32);
@@ -446,9 +448,9 @@ public class AnalyzeKakaoTalk
 		return rooms;
 	}
 	
-	HashMap<Integer,String> parseTypes()
+	Map<Integer,String> parseTypes()
 	{
-		HashMap<Integer,String> types=new HashMap<>();
+		Map<Integer,String> types=new HashMap<>();
 		types.put(0,"시스템");
 		types.put(1,"메시지");
 		types.put(2,"사진");
@@ -480,19 +482,19 @@ public class AnalyzeKakaoTalk
 		System.out.println("[Analyze START] KakaoTalk -> "+xlsx);
 		System.out.println("");
 		int now=0,total;
-		SXSSFWorkbook workbook=new SXSSFWorkbook();
-		HashMap<Long,String> friends=parseFriends();
-		HashMap<Long,String> openProfiles=parseOpenProfiles();
-		HashMap<Long,SXSSFSheet> rooms=parseRooms(workbook,friends);
-		HashMap<Long,Long> prevIds=new HashMap<>();
-		HashMap<Integer,String> types=parseTypes();
+		Workbook workbook=new SXSSFWorkbook();
+		Map<Long,String> friends=parseFriends();
+		Map<Long,String> openProfiles=parseOpenProfiles();
+		Map<Long,Sheet> rooms=parseRooms(workbook,friends);
+		Map<Long,Long> prevIds=new HashMap<>();
+		Map<Integer,String> types=parseTypes();
 		Font boldFont=workbook.createFont();
 		boldFont.setBold(true);
 		CellStyle boldStyle=workbook.createCellStyle();
 		boldStyle.setFont(boldFont);
 		CellStyle dateStyle=workbook.createCellStyle();
 		dateStyle.setDataFormat(workbook.getCreationHelper().createDataFormat().getFormat("yyyy-mm-dd hh:mm:ss"));
-		workbook.getXSSFWorkbook().getProperties().getCoreProperties().setCreator("AnalyzeKakaoTalk");
+		((SXSSFWorkbook)workbook).getXSSFWorkbook().getProperties().getCoreProperties().setCreator("AnalyzeKakaoTalk");
 		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_logs");
 		rs.next();
 		total=rs.getInt(1);
@@ -501,7 +503,7 @@ public class AnalyzeKakaoTalk
 		while(rs.next())
 		{
 			if(++now%10000==0)System.out.println("[Analyze] Passed "+now+" of "+total+" items");
-			SXSSFSheet sheet=null;
+			Sheet sheet=null;
 			long id=rs.getLong("id");
 			long chat_id=rs.getLong("chat_id");
 			if(rooms.containsKey(chat_id))
@@ -510,7 +512,7 @@ public class AnalyzeKakaoTalk
 				sheet=rooms.get(chat_id);
 				if(prev_id!=0&&prevIds.containsKey(chat_id)&&prevIds.get(chat_id)!=prev_id)
 				{
-					SXSSFRow row=sheet.createRow(sheet.getLastRowNum()+1);
+					Row row=sheet.createRow(sheet.getLastRowNum()+1);
 					for(int i=0;i<=6;++i)row.createCell(i);
 					sheet.addMergedRegion(new CellRangeAddress(row.getRowNum(),row.getRowNum(),0,5));
 					row.getCell(0).setCellStyle(boldStyle);
@@ -520,7 +522,7 @@ public class AnalyzeKakaoTalk
 				prevIds.put(chat_id,id);
 			}
 			else sheet=rooms.get(0L);
-			SXSSFRow row=sheet.createRow(sheet.getLastRowNum()+1);
+			Row row=sheet.createRow(sheet.getLastRowNum()+1);
 			for(int i=0;i<=6;++i)row.createCell(i);
 			try
 			{
