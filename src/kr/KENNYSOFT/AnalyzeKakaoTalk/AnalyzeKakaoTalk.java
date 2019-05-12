@@ -177,7 +177,7 @@ public class AnalyzeKakaoTalk
 	{
 		System.out.println("[Decrypt START] KakaoTalk.db/chat_logs -> "+csv);
 		int now=0,total;
-		List<String> toDecode=new ArrayList<>(Arrays.asList("message","attachment"));
+		List<String> toDecode=Arrays.asList("message","attachment");
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
 		CSVWriter writer=new CSVWriter(buff);
 		ResultSet rs=statement.executeQuery("SELECT COUNT(*) FROM chat_logs");
@@ -231,7 +231,7 @@ public class AnalyzeKakaoTalk
 	{
 		System.out.println("[Decrypt2 START] KakaoTalk2.db/friends -> "+csv);
 		int now=0,total;
-		List<String> toDecode=new ArrayList<>(Arrays.asList("uuid","phone_number","raw_phone_number","name","profile_image_url","full_profile_image_url","original_profile_image_url","status_message","v","ext","nick_name","contact_name","board_v"));
+		List<String> toDecode=Arrays.asList("uuid","phone_number","raw_phone_number","name","profile_image_url","full_profile_image_url","original_profile_image_url","status_message","v","ext","nick_name","contact_name","board_v");
 		long userId=getUserId();
 		BufferedWriter buff=new BufferedWriter(new FileWriter(csv));
 		CSVWriter writer=new CSVWriter(buff);
